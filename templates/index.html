@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="container mt-3">
+        <h1>Home</h1> <hr>
+    </div>
+
+    <!-- keywords search input -->
+    <div class="container mt-3">
+        <form class="row g-3" role="search" method="get" action="{% url 'search' %}">
+            <div class="col">
+                <input class="form-control" type="search" name="kw" placeholder="Search by keywords..."
+                       aria-label="Search">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- list of articles -->
+    <div class="container mt-3">
+        <div class="row">
+            {% for article in articles_list %}
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100">
+                        <a href="producto/{{ article.id }}/">
+                            <img class="card-img-top" src="http://placehold.it/700x400" alt="">
+                        </a>
+                        <div class="card-body">
+                            <h4 class="card-title">
+                                <a href="{{ article.url }}">{{ article.title }}</a>
+                            </h4>
+                            <h5>{{ article.subtitle }}</h5>
+                            <p class="card-text"><i class="bi bi-heart-fill"></i> Claps: {{ article.claps }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <i>{{ article.publication }}</i>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+
+{% endblock %}

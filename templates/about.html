@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="container mt-3">
+        <h1>About</h1> <hr>
+    </div>
+
+    <div class="container mt-3">
+        <b>Authors:</b>
+        <ul>
+            {% for author in authors %}
+                <li>{{ author.fullname }} - {{ author.code }}</li>
+            {% endfor %}
+        </ul>
+
+        <b>Subject:</b>
+        <p>Complejidad Algorítmica</p>
+    </div>
+{% endblock %}
