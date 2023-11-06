@@ -108,7 +108,7 @@ def save_graph(graph):
 
         nx.draw(graph, pos, with_labels=True, node_size=700, node_color='lightblue')
         nx.draw_networkx_edge_labels(graph, pos, font_size=8, edge_labels=edge_labels)
-        plt.show()
+        # plt.show()
 
         # se guarda el grafo en una imagen
         graphs_path = os.path.join(settings.BASE_DIR, 'graphs')
@@ -121,6 +121,6 @@ def save_graph(graph):
         # guardar la figura
         graph_path = os.path.join(graphs_path, f'graph_{fecha_hora_str}.png')
         plt.savefig(graph_path)
-        plt.close()
+        # plt.close()
     else:
         print("El grafo no tiene nodos conectados para dibujar.")
