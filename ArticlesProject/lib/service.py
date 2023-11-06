@@ -29,33 +29,39 @@ def combine_title_subtitle(article):
     return f"{article.title} {article.subtitle}"
 
 
+# Función para calcular el promedio del mínimo y máximo de "claps" en una lista de artículos
+def calculate_average_claps(filtered_articles: list):
+    min_claps = min(article.claps for article in filtered_articles)
+    max_claps = max(article.claps for article in filtered_articles)
+    average_claps = (min_claps + max_claps)/2
+    return average_claps
+
+
 # Función para calcular la similitud coseno entre los artículos y un conjunto de palabras clave
-def calculate_cosine_similarity_with_keywords(filtered_articles, keywords):
-    combined_texts = [combine_title_subtitle(article) for article in filtered_articles]
+def calculate_cosine_similarity_with_keywords(filtered_articles):
+    titles = [article.title for article in filtered_articles]
+
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_vectorizer.fit(combined_texts)
+    tfidf_matrix = tfidf_vectorizer.fit_transform(titles)
 
-    # Crear la representación TF-IDF de los artículos
-    article_tfidf_matrix = tfidf_vectorizer.transform(
-        [combine_title_subtitle(article) for article in filtered_articles])
-
-    # Transformar las palabras clave en una representación TF-IDF
-    keywords_string = ' '.join(keywords).lower()
-    keywords_tfidf = tfidf_vectorizer.transform([keywords_string])
-
-    # Calcular la similitud coseno entre las palabras clave y los artículos
-    cosine_similarities = linear_kernel(keywords_tfidf, article_tfidf_matrix).flatten()
-
-    return cosine_similarities
+    cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+    return cosine_sim
 
 
 # Función para ajustar la similitud coseno basada en la coincidencia de la publicación
-def adjust_similarity_for_publication(cosine_similarities, filtered_articles, keywords):
+def adjust_similarity(cosine_similarities, filtered_articles, keywords):
+    average_claps = calculate_average_claps(filtered_articles)
+
     # Ajuste basado en la coincidencia de la publicación
     adjusted_similarities = cosine_similarities.copy()
     for i, article in enumerate(filtered_articles):
         if article.publication.lower() in keywords:
             adjusted_similarities[i] += 0.1  # Ajuste para la coincidencia de la publicación
+
+        # Ajuste basado en el número de "claps" (likes)
+        if article.claps > average_claps:
+            # Ajusta la similitud en función del número de "claps" (likes)
+            adjusted_similarities[i] += 0.1
 
     # Asegurarse de que la similitud sigue estando en el rango [0, 1]
     adjusted_similarities = np.clip(adjusted_similarities, 0, 1)
@@ -65,48 +71,43 @@ def adjust_similarity_for_publication(cosine_similarities, filtered_articles, ke
 
 # Función para construir el grafo con la similitud coseno como peso de los bordes
 def create_graph(filtered_articles: list, keywords: list):
-    # Calcula la similitud coseno entre los artículos y las palabras clave
-    cosine_similarities = calculate_cosine_similarity_with_keywords(filtered_articles, keywords)
-    # Ajusta la similitud basada en la coincidencia de la publicación
-    adjusted_similarities = adjust_similarity_for_publication(cosine_similarities, filtered_articles, keywords)
+    # Calcular la similitud coseno entre los artículos
+    cosine_similarities = calculate_cosine_similarity_with_keywords(filtered_articles)
+    # Ajustar la similitud coseno basada en criterios específicos
+    adjusted_similarities = adjust_similarity(cosine_similarities, filtered_articles, [keyword.lower() for keyword in keywords])
 
-    # Ordena los artículos por similitud ajustada y selecciona los 100 principales
-    top_indices = np.argsort(-adjusted_similarities)[:50]
-    top_articles = [filtered_articles[i] for i in top_indices]
-    top_similarities = adjusted_similarities[top_indices]
+    # Crear un nuevo grafo
+    graph = nx.Graph()
 
-    main_graph = nx.Graph()
+    # Añadir nodos para cada artículo en el grafo
+    for article in filtered_articles:
+        graph.add_node(article.id, title=article.title)
 
-    # se agregan los nodos
-    for article in top_articles:
-        main_graph.add_node(article.id, title=article.title)
+    # Añadir bordes con pesos ajustados
+    for i, article1 in enumerate(filtered_articles):
+        for j, article2 in enumerate(filtered_articles):
+            if i < j:  # Evita conectarse a sí mismo y duplicar bordes
+                # Uso el promedio de las similitudes ajustadas como peso
+                weight = (adjusted_similarities[i][j] + adjusted_similarities[j][i]) / 2
 
-    # Encuentra el artículo con la mayor similitud (posible nodo de partida)
-    starting_article_index = top_similarities.argmax()
-    starting_article_id = top_articles[starting_article_index].id
+                # agrega el borde si el peso es mayor que 0
+                if weight > 0:
+                    graph.add_edge(article1.id, article2.id, weight=round(weight, 3))  # Redondeo a 3 decimales
 
-    # Añadir bordes con pesos basados en la similitud coseno ajustada
-    for i, article in enumerate(top_articles):
-        if i != starting_article_index:  # No conectamos el artículo con sí mismo
-            weight = round(top_similarities[i], 3)
-            if weight > 0:  # Agrega un borde si la similitud es mayor que cero
-                main_graph.add_edge(starting_article_id, article.id, weight=weight)
+    return graph
 
-    # # Añadir bordes con pesos basados en la similitud coseno ajustada
-    # for i, article1 in enumerate(top_articles):
-    #     for j, article2 in enumerate(top_articles):
-    #         if i < j:  # Para evitar duplicados y no comparar un nodo consigo mismo
-    #             weight = round(min(adjusted_similarities[i], adjusted_similarities[j]), 3)
-    #             if weight > 0:  # Agrega un borde si la similitud es mayor que cero
-    #                 main_graph.add_edge(article1.id, article2.id, weight=weight)
 
+def save_graph(graph):
     # se dibuja el grafo si no está vacío
-    if len(main_graph) > 1:  # Más de un nodo en el grafo
-        pos = nx.spring_layout(main_graph)  # para la disposición de los nodos
-        labels = nx.get_edge_attributes(main_graph, 'weight')
-        nx.draw(main_graph, pos, with_labels=True)
-        nx.draw_networkx_edge_labels(main_graph, pos, edge_labels=labels)
-        plt.title("Grafico de hospitales del Peru")
+    if len(graph) > 1:  # Más de un nodo en el grafo
+        pos = nx.spring_layout(graph)  # para la disposición de los nodos
+
+        # Convertir los pesos a porcentajes y crear etiquetas de borde
+        edge_weights = nx.get_edge_attributes(graph, 'weight')
+        edge_labels = {k: f"{v * 100:.2f}%" for k, v in edge_weights.items()}
+
+        nx.draw(graph, pos, with_labels=True, node_size=700, node_color='lightblue')
+        nx.draw_networkx_edge_labels(graph, pos, font_size=8, edge_labels=edge_labels)
         plt.show()
 
         # se guarda el grafo en una imagen
@@ -123,7 +124,3 @@ def create_graph(filtered_articles: list, keywords: list):
         plt.close()
     else:
         print("El grafo no tiene nodos conectados para dibujar.")
-
-    return main_graph
-
-
