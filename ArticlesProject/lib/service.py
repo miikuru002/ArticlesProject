@@ -33,37 +33,52 @@ def combine_title_subtitle(article):
 def calculate_average_claps(filtered_articles: list):
     min_claps = min(article.claps for article in filtered_articles)
     max_claps = max(article.claps for article in filtered_articles)
-    average_claps = (min_claps + max_claps)/2
+    average_claps = (min_claps + max_claps) / 2
     return average_claps
 
 
 # Función para calcular la similitud coseno entre los artículos y un conjunto de palabras clave
-def calculate_cosine_similarity_with_keywords(filtered_articles):
+def calculate_cosine_similarity(filtered_articles):
+    # obtiene los títulos de los artículos
     titles = [article.title for article in filtered_articles]
 
+    # stop_words -> quita las palabras en inglés como "the", "a", "an", etc. que no son útiles para la similitud
+    # TidfVectorizer = TF-IDF (term frequency - inverse document frequency)
+    # TF -> mide la frecuencia en la que aparece una palabra en un string (dividiendo por el total de palabras)
+    # IDF -> mide la importancia de una palabra en un string
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+
+    # tfidf_matrix -> matriz de similitud  coseno entre los artículos (cada fila es un titulo y cada columna un termino)
     tfidf_matrix = tfidf_vectorizer.fit_transform(titles)
 
+    # linear_kernel -> calcula el producto punto entre la matriz
     cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+
+    # retornar la matriz de similitud coseno donde [i][j] es la similitud entre el artículo I y el artículo J
     return cosine_sim
 
 
 # Función para ajustar la similitud coseno basada en la coincidencia de la publicación
 def adjust_similarity(cosine_similarities, filtered_articles, keywords):
+    # calcula el promedio de "claps" (likes) en los artículos filtrados
     average_claps = calculate_average_claps(filtered_articles)
 
-    # Ajuste basado en la coincidencia de la publicación
+    # crea una copia de la matriz de similitud coseno
     adjusted_similarities = cosine_similarities.copy()
-    for i, article in enumerate(filtered_articles):
-        if article.publication.lower() in keywords:
-            adjusted_similarities[i] += 0.1  # Ajuste para la coincidencia de la publicación
 
-        # Ajuste basado en el número de "claps" (likes)
-        if article.claps > average_claps:
-            # Ajusta la similitud en función del número de "claps" (likes)
+    # se itera sobre los artículos filtrados (similar al for each)
+    for i, article in enumerate(filtered_articles):
+        # verifica si el texto de la publicación del artículo está en los keywords
+        if article.publication.lower() in keywords:
+            # aumenta la similitud
             adjusted_similarities[i] += 0.1
 
-    # Asegurarse de que la similitud sigue estando en el rango [0, 1]
+        # si el número de "claps" (likes) es mayor que el promedio
+        if article.claps > average_claps:
+            # aumenta la similitud
+            adjusted_similarities[i] += 0.1
+
+    # se limita los valores de la matriz entre 0 y 1 (si es que < 0 se pone 0 y si es que > 1 se pone 1)
     adjusted_similarities = np.clip(adjusted_similarities, 0, 1)
 
     return adjusted_similarities
@@ -71,19 +86,20 @@ def adjust_similarity(cosine_similarities, filtered_articles, keywords):
 
 # Función para construir el grafo con la similitud coseno como peso de los bordes
 def create_graph(filtered_articles: list, keywords: list):
-    # Calcular la similitud coseno entre los artículos
-    cosine_similarities = calculate_cosine_similarity_with_keywords(filtered_articles)
-    # Ajustar la similitud coseno basada en criterios específicos
-    adjusted_similarities = adjust_similarity(cosine_similarities, filtered_articles, [keyword.lower() for keyword in keywords])
+    # se calcula la similitud coseno entre los artículos filtrados en base a los títulos
+    cosine_similarities = calculate_cosine_similarity(filtered_articles)
+    # se ajusta la similitud coseno
+    adjusted_similarities = adjust_similarity(cosine_similarities, filtered_articles,
+                                              [keyword.lower() for keyword in keywords])
 
-    # Crear un nuevo grafo
+    # se crea un nuevo grafo
     graph = nx.Graph()
 
-    # Añadir nodos para cada artículo en el grafo
+    # se añaden nodos para cada artículo en el grafo
     for article in filtered_articles:
         graph.add_node(article.id, title=article.title)
 
-    # Añadir bordes con pesos ajustados
+    # se añaden los bordes con pesos ajustados
     for i, article1 in enumerate(filtered_articles):
         for j, article2 in enumerate(filtered_articles):
             if i < j:  # Evita conectarse a sí mismo y duplicar bordes
