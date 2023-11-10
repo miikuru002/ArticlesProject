@@ -13,8 +13,10 @@ articles_data = get_all_articles()
 
 # función para filtrar los artículos según los keywords
 def do_filter(keywords: list):
+    # se itera sobre cada artículo en 'articles_data' que son todos los artículos del csv usando comprensión de lista
     filtered_articles = [
         article for article in articles_data if
+        # verifica si algun kw se encuentra en el titulo, subtitulo o el nombre de la publicacion del articulo
         any(keyword.lower() in article.title.lower() or
             keyword.lower() in article.subtitle.lower() or
             keyword.lower() in article.publication.lower()
