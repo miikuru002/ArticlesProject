@@ -1,6 +1,6 @@
 from django.shortcuts import *
 from ArticlesProject.database.articles import get_all_articles
-from ArticlesProject.controllers.controller import filter_articles
+from ArticlesProject.controllers.controller import filter_articles, filter_categories
 from django.urls import resolve
 
 
@@ -23,11 +23,13 @@ def search_view(request):
     keywords = request.GET.get('kw', '')
     keywords_list = keywords.split(' ')  # se convierte el string en una lista de keywords
 
-    filtered_articles = filter_articles(keywords_list)
+    filtered_articles = filter_articles(keywords_list)[:50]
+    filtered_categories = filter_categories(filtered_articles)
 
     return render(request, 'search.html', {
         'keywords': keywords,
         'filtered_articles': filtered_articles,
+        'filtered_categories': filtered_categories
     })
 
 

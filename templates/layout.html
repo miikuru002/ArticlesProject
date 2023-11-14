@@ -4,10 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Articles</title>
-    {% load bootstrap5 %}
+    {% load django_bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
 <!-- Navigation -->
@@ -38,7 +39,7 @@
 
 <!-- Page Content -->
 {% block content %}{% endblock %}
-
+{% block scripts %} {% endblock %}
 <!-- Footer -->
 <footer class="py-3 bg-dark fixed-bottom">
     <div class="container">
@@ -47,4 +48,6 @@
     </div>
 </footer>
 </body>
+
+
 </html>
