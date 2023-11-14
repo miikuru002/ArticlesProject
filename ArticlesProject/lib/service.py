@@ -7,6 +7,7 @@ from sklearn.metrics.pairwise import linear_kernel
 from ArticlesProject.database.articles import get_all_articles
 from ArticlesProject import settings
 from datetime import datetime
+from queue import Queue
 
 articles_data = get_all_articles()
 
@@ -18,12 +19,20 @@ def do_filter(keywords: list):
         article for article in articles_data if
         # verifica si algun kw se encuentra en el titulo, subtitulo o el nombre de la publicacion del articulo
         any(keyword.lower() in article.title.lower() or
-            keyword.lower() in article.subtitle.lower() or
-            keyword.lower() in article.publication.lower()
+            keyword.lower() in article.subtitle.lower()
             for keyword in keywords)
     ]
 
     return filtered_articles
+
+
+# Función para obtener las categorías de los artículos filtrados
+def filter_categories(filtered_articles):
+    filtered_categories = []
+    for article in filtered_articles:
+        if article.category not in filtered_categories:
+            filtered_categories.append(article.category)
+    return filtered_categories
 
 
 # Función para combinar el título y el subtítulo
@@ -61,6 +70,7 @@ def calculate_cosine_similarity(filtered_articles):
 
 
 # Función para ajustar la similitud coseno basada en la coincidencia de la publicación
+
 def adjust_similarity(cosine_similarities, filtered_articles, keywords):
     # calcula el promedio de "claps" (likes) en los artículos filtrados
     average_claps = calculate_average_claps(filtered_articles)
@@ -142,3 +152,49 @@ def save_graph(graph):
         # plt.close()
     else:
         print("El grafo no tiene nodos conectados para dibujar.")
+
+
+
+def find_most_similar_article(keywords: list, filtered_articles):
+    # Combinar título y subtítulo (si es necesario) y extraerlos
+    combined_texts = [combine_title_subtitle(article) for article in filtered_articles]
+
+    # Vectorizar los textos de los artículos
+    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf_vectorizer.fit_transform(combined_texts)
+
+    # Convertir la lista de palabras clave en una cadena y vectorizar
+    keywords_text = ' '.join(keywords)
+    keywords_vector = tfidf_vectorizer.transform([keywords_text])
+
+    # Calcular la similitud coseno usando linear_kernel
+    cosine_similarities = linear_kernel(keywords_vector, tfidf_matrix).flatten()
+
+    # Encontrar el índice del artículo más similar
+    most_similar_article_idx = np.argmax(cosine_similarities)
+
+    # Devolver el id del artículo más similar
+    return filtered_articles[most_similar_article_idx].id
+
+def similar_articles_bfs(graph, start_id, id_to_article_map):
+    visited = set()  # Conjunto para almacenar los nodos visitados
+    queue = Queue()  # Cola para BFS
+
+    # Iniciar BFS
+    queue.put(start_id)
+    visited.add(start_id)
+
+    similar_articles = []  # Lista para almacenar los artículos similares
+
+    while not queue.empty():
+        current_id = queue.get()
+        # Añadir el objeto de artículo correspondiente al ID actual
+        similar_articles.append(id_to_article_map[current_id])
+
+        # Obtener todos los vecinos del nodo actual
+        for neighbor_id in graph.neighbors(current_id):
+            if neighbor_id not in visited:
+                visited.add(neighbor_id)
+                queue.put(neighbor_id)
+
+    return similar_articles

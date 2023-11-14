@@ -8,16 +8,24 @@
         <p>
             Keywords: {{ keywords }}
         </p>
-        <button type="button" class="btn btn-success"><i class="bi bi-bezier"></i> View graph</button>
+        <div class="d-flex align-items-center justify-content-between">
+            <button type="button" class="btn btn-success"><i class="bi bi-bezier"></i> View graph</button>
+            <select class="form-select" id="categorySelect" aria-label="Category" style="width: 350px">
+                <option value="all" selected> All categories </option>
+                {% for category in filtered_categories %}
+                    <option value="{{ category }}"> {{ category }} </option>
+                {% endfor %}
+            </select>
+        </div>
     </div>
 
     <div class="container mt-3">
         <div class="row">
             {% for article in filtered_articles %}
-                <div class="col-lg-4 col-md-6 mb-4">
+                <div class="col-lg-4 col-md-6 mb-4" data-category="{{ article.category }}">
                     <div class="card h-100">
                         <a>
-                            <img class="card-img-top" src="http://placehold.it/700x400" alt="">
+                            <img class="card-img-top" src="/static/file.jpg" alt="">
                         </a>
                         <div class="card-body">
                             <h4 class="card-title">
@@ -25,6 +33,7 @@
                             </h4>
                             <h5>{{ article.subtitle }}</h5>
                             <p class="card-text"><i class="bi bi-heart-fill"></i> Claps: {{ article.claps }}</p>
+                             <p class="card-text"><i class="bi bi-tag-fill"></i> {{ article.category }}</p>
                         </div>
                         <div class="card-footer">
                             <i>{{ article.id }} - {{ article.publication }}</i>
@@ -34,4 +43,31 @@
             {% endfor %}
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // Obtén el elemento select
+        var categorySelect = document.getElementById('categorySelect');
+
+        // Obtén todas las tarjetas
+        var cards = document.querySelectorAll('.col-lg-4');
+
+        // Agrega un evento de cambio al elemento select
+        categorySelect.addEventListener('change', function() {
+            var selectedCategory = categorySelect.value.toLowerCase();
+
+            // Itera sobre todas las tarjetas
+            cards.forEach(function(card) {
+                var cardCategory = card.getAttribute('data-category').toLowerCase();
+
+                // Si la categoría seleccionada es 'all' o coincide con la categoría de la tarjeta, muestra la tarjeta; de lo contrario, ocúltala
+                if (selectedCategory === 'all' || selectedCategory === cardCategory) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
 {% endblock %}

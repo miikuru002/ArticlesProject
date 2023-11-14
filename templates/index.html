@@ -24,7 +24,7 @@
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100">
                         <a>
-                            <img class="card-img-top" src="http://placehold.it/700x400" alt="">
+                            <img class="card-img-top" src="/static/file.jpg" alt="">
                         </a>
                         <div class="card-body">
                             <h4 class="card-title">
@@ -32,6 +32,7 @@
                             </h4>
                             <h5>{{ article.subtitle }}</h5>
                             <p class="card-text"><i class="bi bi-heart-fill"></i> Claps: {{ article.claps }}</p>
+                            <p class="card-text"><i class="bi bi-tag-fill"></i> {{ article.category }}</p>
                         </div>
                         <div class="card-footer">
                             <i>{{ article.publication }}</i>

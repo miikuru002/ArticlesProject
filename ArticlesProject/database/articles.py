@@ -31,6 +31,7 @@ def get_all_articles():
                 reading_time=int(file[7]),
                 publication=str(file[8]),
                 date=str(file[9]),
+                category=str(file[10])
             )
         )
 

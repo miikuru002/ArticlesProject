@@ -1,5 +1,5 @@
 class Article:
-    def __init__(self, id, url, title, subtitle, image, claps, responses, reading_time, publication, date):
+    def __init__(self, id, url, title, subtitle, image, claps, responses, reading_time, publication, date, category):
         self.id = id
         self.url = url
         self.title = title
@@ -10,6 +10,7 @@ class Article:
         self.reading_time = reading_time
         self.publication = publication
         self.date = date
+        self.category = category
 
     def __str__(self):
-        return f"Article: {self.id} - {self.title} - {self.subtitle} - {self.claps} - {self.date}"
+        return f"Article: {self.id} - {self.title} - {self.subtitle} - {self.claps} - {self.date} - {self.category}"
