@@ -177,24 +177,26 @@ def find_most_similar_article(keywords: list, filtered_articles):
     return filtered_articles[most_similar_article_idx].id
 
 def similar_articles_bfs(graph, start_id, id_to_article_map):
-    visited = set()  # Conjunto para almacenar los nodos visitados
-    queue = Queue()  # Cola para BFS
+    visited = set()  # Conjunto para almacenar los nodos visitados, evita la revisión repetida de nodos
+    queue = Queue()  # Cola para realizar la búsqueda en anchura (BFS)
 
-    # Iniciar BFS
+    # Iniciar BFS con el artículo inicial
     queue.put(start_id)
     visited.add(start_id)
 
-    similar_articles = []  # Lista para almacenar los artículos similares
+    similar_articles = []  # Lista para almacenar los artículos similares encontrados
 
+    # Continuar mientras haya nodos por explorar en la cola
     while not queue.empty():
-        current_id = queue.get()
-        # Añadir el objeto de artículo correspondiente al ID actual
+        current_id = queue.get()  # Obtener el siguiente nodo (ID del artículo) para explorar
+
+        # Añadir el objeto de artículo correspondiente al ID actual a la lista de similares
         similar_articles.append(id_to_article_map[current_id])
 
-        # Obtener todos los vecinos del nodo actual
+        # Explorar todos los vecinos (conexiones directas) del artículo actual
         for neighbor_id in graph.neighbors(current_id):
             if neighbor_id not in visited:
-                visited.add(neighbor_id)
-                queue.put(neighbor_id)
+                visited.add(neighbor_id)  # Marcar el vecino como visitado
+                queue.put(neighbor_id)  # Añadir el vecino a la cola para su posterior exploración
 
-    return similar_articles
+    return similar_articles  # Retornar la lista de artículos similares
